@@ -2,6 +2,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { BACKEND_URL } from "@/lib/constants";
 const SignInForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [userData, setUserData] = useState({
@@ -100,6 +102,9 @@ const SignInForm = () => {
               Forgot Password?
             </Link>
           )}
+          <Button>
+            <a href={`${BACKEND_URL}/auth/google/login`}>Sign In With Google</a>
+          </Button>
         </div>
       </div>
     </div>

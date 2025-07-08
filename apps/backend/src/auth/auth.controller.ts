@@ -20,7 +20,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   @Post('login')
   async signIn(
@@ -28,7 +28,6 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.validateUser(signInInput);
-
     const result = await this.authService.login(user);
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
@@ -45,7 +44,7 @@ export class AuthController {
   }
   @UseGuards(GoogleAuthGuard)
   @Get('google/login')
-  googleLogin() {}
+  googleLogin() { }
 
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
