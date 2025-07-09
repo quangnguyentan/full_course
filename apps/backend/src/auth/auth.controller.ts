@@ -6,6 +6,7 @@ import {
   UseGuards,
   Request,
   Res,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInInput } from './dto/signin.input';
@@ -14,13 +15,16 @@ import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { JwtService } from '@nestjs/jwt';
+import { AuthJwtPayload } from './types/auth-jwtPayload';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
-  ) { }
+    private readonly jwtService: JwtService,
+  ) {}
 
   @Post('login')
   async signIn(
@@ -35,6 +39,12 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000,
     });
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
     return { user: result };
   }
 
@@ -42,9 +52,43 @@ export class AuthController {
   async signUp(@Body() signUpInput: SignUpInput) {
     return this.authService.register(signUpInput);
   }
+
+  @Post('refresh-token')
+  async refresh(@Request() req, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) throw new UnauthorizedException('No refresh token');
+
+    try {
+      const payload = await this.jwtService.verifyAsync<AuthJwtPayload>(
+        refreshToken,
+        { secret: this.configService.get<string>('JWT_REFRESH_SECRET') },
+      );
+
+      const newAccessToken = await this.authService.generateToken(payload.sub);
+
+      // Gửi lại accessToken mới
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000,
+      });
+
+      return { newAccessToken };
+    } catch (err) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+  }
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+    return { message: 'Đăng xuất thành công' };
+  }
+  @UseGuards(JwtAuthGuard)
   @UseGuards(GoogleAuthGuard)
   @Get('google/login')
-  googleLogin() { }
+  googleLogin() {}
 
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
@@ -56,13 +100,18 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 2 phút
     });
+    res.cookie('refreshToken', userData.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
+    });
     res.redirect(
       `${this.configService.get<string>('CLIENT_URL')}/api/auth/google/callback?userId=${userData?.id}`,
     );
   }
-  @UseGuards(JwtAuthGuard)
   @Get('verify-token')
-  verify() {
-    return 'ok';
+  verify(@Request() req) {
+    return req.user; // hoặc { id: req.user.id }
   }
 }

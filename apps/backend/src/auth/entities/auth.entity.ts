@@ -13,4 +13,7 @@ export class Auth {
 
   @Column({ nullable: true })
   accessToken?: string;
+
+  @Column({ nullable: true })
+  refreshToken?: string;
 }

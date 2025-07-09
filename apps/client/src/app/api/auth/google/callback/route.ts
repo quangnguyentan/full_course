@@ -17,7 +17,7 @@ export async function GET(req: NextResponse) {
       authorization: `Bearer ${accessToken}`,
     },
   });
-
+  console.log(res);
   if (res.status === 401) throw new Error("jwt verification failed!");
 
   redirect("/");

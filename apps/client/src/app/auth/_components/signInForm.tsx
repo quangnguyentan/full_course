@@ -4,8 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { BACKEND_URL } from "@/lib/constants";
+import { apiLogin } from "@/services/auth.service";
+import { toast } from "react-toastify";
+import { AxiosError } from "axios";
 const SignInForm = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState({
     email: "",
     password: "",
@@ -17,27 +21,32 @@ const SignInForm = () => {
   };
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(userData),
-      });
-      if (!res.ok) {
-        throw new Error("Đăng nhập thất bại");
-      }
+    setLoading(true);
 
-      const data = await res.json();
-      if (data?.user) {
-        router.push("/");
+    try {
+      const res = await apiLogin(userData);
+      console.log(res);
+      const { accessToken } = res?.user ?? {};
+      localStorage.setItem(
+        "persist:auth",
+        JSON.stringify({
+          token: JSON.stringify(accessToken),
+        })
+      );
+
+      toast.success("Đăng nhập thành công");
+      router.push("/");
+    } catch (error: unknown) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        toast.error(error?.response?.data?.message);
+      } else {
+        toast.error("Lỗi hệ thống, vui lòng thử lại");
       }
-      console.log("Đăng nhập thành công:", data);
-    } catch (error) {
-      console.error("Lỗi khi đăng nhập:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 w-full">
       <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-500">
@@ -76,10 +85,11 @@ const SignInForm = () => {
           </div>
 
           <button
+            disabled={loading}
             type="submit"
             className="w-full py-3 bg-gradient-to-r from-pink-500 to-indigo-500 text-black font-semibold rounded-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105"
           >
-            {isLogin ? "Login" : "Register"}
+            {loading ? "Đang đăng nhập..." : isLogin ? "Login" : "Register"}
           </button>
         </form>
 

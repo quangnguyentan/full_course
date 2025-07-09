@@ -24,14 +24,13 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     const setCookie = response.headers.get("set-cookie");
     const nextRes = NextResponse.json(
-      { user: data.user },
+      { user: data.user, accessToken: data.user?.accessToken },
       { status: response.status }
     );
 
     if (setCookie) {
       nextRes.headers.set("set-cookie", setCookie); // BẮT BUỘC
     }
-
     return nextRes;
   } catch (error) {
     console.error("Lỗi server route /api/auth/login:", error);
