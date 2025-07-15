@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -25,7 +26,11 @@ export class UserController {
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
-
+  @UseGuards(AuthGuard('jwt'))
+  @Get('current')
+  getCurrentUser(@Request() req) {
+    return req.user;
+  }
   @UseGuards(AuthGuard('jwt'))
   @Get()
   findAll() {

@@ -20,7 +20,12 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async validateUser({ email, password }) {
+  async validateUser(credentials: { email: string; password: string }) {
+    console.log(credentials.email, credentials.password);
+    if (!credentials || !credentials.email || !credentials.password) {
+      throw new BadRequestException('Missing email or password');
+    }
+    const { email, password } = credentials;
     const user = await this.userRepository.findOne({
       where: { email },
     });
@@ -64,6 +69,12 @@ export class AuthService {
     const refreshToken = await this.generateRefreshToken(user.id);
     return {
       id: user.id,
+      username: user.username,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      followers: user.followers,
+      following: user.following,
+      posts: user.posts,
       email: user.email,
       authStrategy: 'email',
       accessToken,

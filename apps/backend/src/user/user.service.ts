@@ -10,12 +10,12 @@ export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
-  create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto) {
     const user = this.userRepository.create({
       ...createUserDto,
       createdAt: new Date(),
     });
-    return this.userRepository.save(user);
+    return await this.userRepository.save(user);
   }
   async findAll() {
     const user = await this.userRepository.find();

@@ -33,15 +33,22 @@ export class AuthController {
   ) {
     const user = await this.authService.validateUser(signInInput);
     const result = await this.authService.login(user);
-    res.cookie('accessToken', result.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+
+    res
+      .cookie('accessToken', result.accessToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000,
+      })
+      .json({
+        message: `Chào mừng ${result?.username}`,
+        success: true,
+        user: result,
+      });
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });
@@ -69,7 +76,7 @@ export class AuthController {
       // Gửi lại accessToken mới
       res.cookie('accessToken', newAccessToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         sameSite: 'lax',
         maxAge: 15 * 60 * 1000,
       });
@@ -96,13 +103,13 @@ export class AuthController {
     const userData = await this.authService.login(req.user);
     res.cookie('accessToken', userData.accessToken, {
       httpOnly: true, // Không cho frontend JS truy cập
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 2 phút
     });
     res.cookie('refreshToken', userData.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày
     });

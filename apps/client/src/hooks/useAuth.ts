@@ -8,6 +8,7 @@ export const useAuth = () => {
     queryFn: async () => {
       try {
         const res = await instance.get("/auth/verify-token");
+        console.log(res);
         return res.data;
       } catch (err: unknown) {
         // Nếu accessToken hết hạn, gọi refresh

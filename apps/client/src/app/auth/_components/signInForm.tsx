@@ -2,43 +2,45 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { BACKEND_URL } from "@/lib/constants";
-import { apiLogin } from "@/services/auth.service";
 import { toast } from "react-toastify";
 import { AxiosError } from "axios";
+import { AuthInput } from "./auth-input";
+import { Button } from "@/components/ui/button";
+import { apiLogin, apiRegister } from "@/services/auth.service";
+import { BACKEND_URL } from "@/lib/constants";
+import { Mail, Lock } from "lucide-react";
+import Image from "next/image";
+
 const SignInForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState({
-    email: "",
-    password: "",
-  });
+  const [userData, setUserData] = useState({ email: "", password: "" });
   const router = useRouter();
-
-  const toggleForm = () => {
-    setIsLogin(!isLogin);
-  };
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const res = await apiLogin(userData);
-      console.log(res);
-      const { accessToken } = res?.user ?? {};
-      localStorage.setItem(
-        "persist:auth",
-        JSON.stringify({
-          token: JSON.stringify(accessToken),
-        })
-      );
-
-      toast.success("Đăng nhập thành công");
-      router.push("/");
+      if (isLogin) {
+        console.log(userData);
+        const res = await apiLogin(userData);
+        const { accessToken } = res?.user ?? {};
+        localStorage.setItem(
+          "persist:auth",
+          JSON.stringify({ token: JSON.stringify(accessToken) })
+        );
+        toast.success("Đăng nhập thành công");
+        router.push("/");
+      } else {
+        const res = await apiRegister(userData);
+        if (res) {
+          toast.success("Tạo tài khoản thành công");
+          setIsLogin(true);
+          handleResetForm();
+        }
+      }
     } catch (error: unknown) {
       if (error instanceof AxiosError && error.response?.status === 401) {
-        toast.error(error?.response?.data?.message);
+        toast.error(error.response?.data?.message);
       } else {
         toast.error("Lỗi hệ thống, vui lòng thử lại");
       }
@@ -46,76 +48,72 @@ const SignInForm = () => {
       setLoading(false);
     }
   };
-
+  const handleResetForm = () => {
+    setUserData({ email: "", password: "" });
+  };
   return (
-    <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 w-full">
-      <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-500">
-        <h2 className="text-3xl font-bold text-white text-center mb-6 animate-pulse">
-          {isLogin ? "Welcome Back" : "Create Account"}
-        </h2>
+    <div className="w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8">
+      <h2 className="text-3xl font-bold text-white text-center mb-6">
+        {isLogin ? "Welcome Back" : "Create Account"}
+      </h2>
 
-        <form
-          className="space-y-6"
-          onSubmit={(e) => {
-            handleSubmit(e);
-          }}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthInput
+          icon={<Mail size={18} />}
+          type="email"
+          placeholder="Email Address"
+          required
+          onChange={(e) => setUserData({ ...userData, email: e.target.value })}
+          value={userData.email}
+        />
+
+        <AuthInput
+          icon={<Lock size={18} />}
+          type="password"
+          placeholder="Password"
+          required
+          onChange={(e) =>
+            setUserData({ ...userData, password: e.target.value })
+          }
+          value={userData.password}
+        />
+
+        <Button
+          type="submit"
+          className="w-full bg-gradient-to-r from-pink-500 to-indigo-500 text-white font-semibold"
+          disabled={loading}
         >
-          <div className="relative">
-            <input
-              onChange={(e) => {
-                setUserData({ ...userData, email: e.target.value });
-              }}
-              type="email"
-              placeholder="Email Address"
-              className="w-full px-4 py-3 bg-white bg-opacity-20 rounded-lg text-black placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
-              required
-            />
-          </div>
+          {loading ? "Đang xử lý..." : isLogin ? "Login" : "Register"}
+        </Button>
+      </form>
 
-          <div className="relative">
-            <input
-              onChange={(e) => {
-                setUserData({ ...userData, password: e.target.value });
-              }}
-              type="password"
-              placeholder="Password"
-              className="w-full px-4 py-3 bg-white bg-opacity-20 rounded-lg text-black placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 transition-all"
-              required
-            />
-          </div>
-
+      <div className="text-center mt-4">
+        <p className="text-white text-sm">
+          {isLogin ? "Don't have an account?" : "Already have an account?"}
           <button
-            disabled={loading}
-            type="submit"
-            className="w-full py-3 bg-gradient-to-r from-pink-500 to-indigo-500 text-black font-semibold rounded-lg hover:bg-opacity-90 transition-all duration-300 transform hover:scale-105"
+            onClick={() => setIsLogin(!isLogin)}
+            className="ml-2 text-pink-300 hover:text-pink-400 underline"
           >
-            {loading ? "Đang đăng nhập..." : isLogin ? "Login" : "Register"}
+            {isLogin ? "Register" : "Login"}
           </button>
-        </form>
+        </p>
 
-        <div className="mt-6 text-center">
-          <p className="text-white">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
-            <button
-              onClick={toggleForm}
-              className="ml-2 text-pink-300 hover:text-pink-400 font-semibold transition-colors"
-            >
-              {isLogin ? "Register" : "Login!"}
-            </button>
-          </p>
+        {isLogin && (
+          <Link
+            href="/forgot-password"
+            className="text-pink-300 hover:text-pink-400 text-xs mt-2 block"
+          >
+            Forgot Password?
+          </Link>
+        )}
 
-          {isLogin && (
-            <Link
-              href="/forgot-password"
-              className="text-pink-300 hover:text-pink-400 text-sm mt-2 block transition-colors"
-            >
-              Forgot Password?
-            </Link>
-          )}
-          <Button>
-            <a href={`${BACKEND_URL}/auth/google/login`}>Sign In With Google</a>
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          className="mt-4 w-full flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-100"
+        >
+          <Image src="/google-icon.svg" alt="Google" width={20} height={20} />
+          <a href={`${BACKEND_URL}/auth/google/login`}>Sign In With Google</a>
+        </Button>
       </div>
     </div>
   );

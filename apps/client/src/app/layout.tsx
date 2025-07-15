@@ -1,8 +1,6 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
-import { ModeToggle } from "@/components/mode-toggle";
 import { Bounce, ToastContainer } from "react-toastify";
-import { QueryProvider } from "@/components/query-provider";
 import AppWrapper from "@/components/app-wrapper";
 
 export default function RootLayout({
@@ -19,10 +17,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ModeToggle />
-          <AppWrapper>
-            <QueryProvider>{children}</QueryProvider>
-          </AppWrapper>
+          <AppWrapper>{children}</AppWrapper>
           <ToastContainer
             position="top-right"
             autoClose={5000}
@@ -36,7 +31,6 @@ export default function RootLayout({
             theme="light"
             transition={Bounce}
           />
-          <ToastContainer />
         </ThemeProvider>
       </body>
     </html>
